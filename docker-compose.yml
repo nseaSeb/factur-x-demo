@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: dockerfile
+    ports:
+      - "3200:3200"
+    environment:
+      - NODE_ENV=development
+      - PORT=3200
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=facturx
+      - DB_PASSWORD=facturx
+      - DB_NAME=facturx
+      - JWT_SECRET=change-me-in-production
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+    command: pnpm run start:dev
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: facturx
+      POSTGRES_PASSWORD: facturx
+      POSTGRES_DB: facturx
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
