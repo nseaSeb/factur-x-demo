@@ -225,3 +225,44 @@ pre {
   overflow-x: auto;
   font-size: 12px;
 }
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.card-header h3 {
+  margin: 0;
+}
+
+.pdf-frame {
+  width: 100%;
+  height: 720px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+}
+
+.report-table {
+  margin-top: 10px;
+  color: var(--text);
+}
+
+.report-table td {
+  vertical-align: top;
+}
+
+.diff-changed td {
+  background: var(--danger-bg);
+}
+
+.diff-added td {
+  background: var(--ok-bg);
+}
+
+code {
+  font-size: 12px;
+}

@@ -39,8 +39,13 @@ export class InvoicesService {
     return this.repository.save(entity);
   }
 
-  async findAll(page: number, limit: number): Promise<[Invoice[], number]> {
+  async findAll(
+    page: number,
+    limit: number,
+    number?: string,
+  ): Promise<[Invoice[], number]> {
     return this.repository.findAndCount({
+      where: number ? { number } : {},
       order: { createdAt: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,

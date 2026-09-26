@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { api, ApiError, toPath } from '../api/client';
+import { api, ApiError } from '../api/client';
 import type { InvoiceResource, ValidationResult } from '../api/types';
+import PdfPreview from '../components/PdfPreview';
+import ValidationReport from '../components/ValidationReport';
 
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -58,28 +60,13 @@ export default function InvoiceDetailPage() {
       </p>
 
       <div className="actions">
-        <a className="btn primary" href={toPath(_links.pdf.href)} target="_blank" rel="noreferrer">
-          Télécharger le PDF
-        </a>
-        <button className="btn" onClick={runValidation} disabled={validating}>
+        <button className="btn primary" onClick={runValidation} disabled={validating}>
           {validating ? 'Validation…' : 'Valider (EN 16931)'}
         </button>
       </div>
 
       {validation && (
-        <div className={validation.valid ? 'ok-box' : 'error-box'}>
-          {validation.valid ? (
-            'Facture valide EN 16931.'
-          ) : (
-            <ul style={{ margin: 0, paddingLeft: 18 }}>
-              {validation.errors.map((e, i) => (
-                <li key={i}>
-                  <strong>{e.field || e.code}</strong> — {e.message}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        <ValidationReport title="Validation EN 16931" errors={validation.errors} />
       )}
 
       <div className="grid">
@@ -141,6 +128,8 @@ export default function InvoiceDetailPage() {
         </p>
         <p>À payer : {payload.totals.duePayable} €</p>
       </div>
+
+      <PdfPreview href={_links.pdf.href} fileName={`${data.number}.pdf`} />
     </section>
   );
 }

@@ -57,6 +57,7 @@ export class InvoicesController {
     const [invoices, total] = await this.invoicesService.findAll(
       query.page,
       query.limit,
+      query.number,
     );
     return {
       data: invoices.map((invoice) => this.toInvoiceDto(invoice)),
@@ -65,6 +66,7 @@ export class InvoicesController {
         query.page,
         query.limit,
         total,
+        query.number ? { number: query.number } : undefined,
       ),
     };
   }

@@ -60,25 +60,27 @@ export class HateoasService {
     page: number,
     limit: number,
     total: number,
+    filters?: Record<string, string>,
   ): CollectionLinks {
     const lastPage = Math.max(1, Math.ceil(total / limit));
+    // Filters are carried into every link so paging a filtered collection
+    // stays filtered.
+    const pageHref = (target: number): string => {
+      const params = new URLSearchParams({
+        ...filters,
+        page: String(target),
+        limit: String(limit),
+      });
+      return `${this.baseUrl}${resourcePath}?${params.toString()}`;
+    };
     const links: CollectionLinks = {
-      self: {
-        href: `${this.baseUrl}${resourcePath}?page=${page}&limit=${limit}`,
-        method: 'GET',
-      },
+      self: { href: pageHref(page), method: 'GET' },
     };
     if (page > 1) {
-      links.prev = {
-        href: `${this.baseUrl}${resourcePath}?page=${page - 1}&limit=${limit}`,
-        method: 'GET',
-      };
+      links.prev = { href: pageHref(page - 1), method: 'GET' };
     }
     if (page < lastPage) {
-      links.next = {
-        href: `${this.baseUrl}${resourcePath}?page=${page + 1}&limit=${limit}`,
-        method: 'GET',
-      };
+      links.next = { href: pageHref(page + 1), method: 'GET' };
     }
     return links;
   }

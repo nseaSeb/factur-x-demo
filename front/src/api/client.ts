@@ -29,8 +29,26 @@ async function request<T>(hrefOrPath: string, init?: RequestInit): Promise<T> {
   return body as T;
 }
 
+// Binary responses (the generated PDF) can't go through request(), which
+// parses JSON. Error bodies are still JSON, so they're parsed for ApiError.
+async function requestBlob(hrefOrPath: string): Promise<Blob> {
+  const res = await fetch(toPath(hrefOrPath));
+  if (!res.ok) {
+    const text = await res.text();
+    let body: unknown = text;
+    try {
+      body = JSON.parse(text);
+    } catch {
+      // keep raw text
+    }
+    throw new ApiError(res.status, body);
+  }
+  return res.blob();
+}
+
 export const api = {
   get: <T>(hrefOrPath: string): Promise<T> => request<T>(hrefOrPath),
+  getBlob: requestBlob,
   post: <T>(hrefOrPath: string, payload: unknown): Promise<T> =>
     request<T>(hrefOrPath, {
       method: 'POST',
