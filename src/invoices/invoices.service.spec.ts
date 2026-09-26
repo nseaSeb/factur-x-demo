@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { FacturxService } from '../facturx/facturx.service';
+import { InvoiceRendererService } from '../facturx/invoice-renderer.service';
 import { Invoice } from './entities/invoice.entity';
 import { InvoicesService } from './invoices.service';
 
@@ -21,6 +22,10 @@ describe('InvoicesService', () => {
             findAndCount,
             findOne: jest.fn(),
           },
+        },
+        {
+          provide: InvoiceRendererService,
+          useValue: { render: jest.fn() },
         },
         {
           provide: FacturxService,

@@ -28,6 +28,7 @@
     "migration:revert": "ts-node ./node_modules/typeorm/cli.js migration:revert -d typeorm.config.ts"
   },
   "dependencies": {
+    "@myriaddreamin/typst-ts-node-compiler": "0.7.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.0.1",

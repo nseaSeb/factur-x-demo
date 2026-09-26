@@ -12,6 +12,7 @@ import type {
 } from 'factur-x-ts';
 import type { FacturXProfile } from '../facturx/facturx-profile';
 import { FacturxService } from '../facturx/facturx.service';
+import { InvoiceRendererService } from '../facturx/invoice-renderer.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { Invoice } from './entities/invoice.entity';
 import { fromFacturXInvoice, toFacturXInvoice } from './invoice.mapper';
@@ -26,6 +27,7 @@ export class InvoicesService {
   constructor(
     @InjectRepository(Invoice) private readonly repository: Repository<Invoice>,
     private readonly facturx: FacturxService,
+    private readonly renderer: InvoiceRendererService,
   ) {}
 
   async create(dto: CreateInvoiceDto): Promise<Invoice> {
@@ -67,8 +69,13 @@ export class InvoicesService {
     const entity = await this.findOne(id);
     const invoice = toFacturXInvoice(entity.payload);
     const profile = profileOverride ?? entity.profile;
+    const visualPdf = this.renderer.render(entity.payload, profile);
     try {
-      return await this.facturx.generateInvoice({ invoice, profile });
+      return await this.facturx.generateInvoice({
+        invoice,
+        profile,
+        visualPdf,
+      });
     } catch (error) {
       const validationErrors =
         await this.facturx.extractGenerateValidationErrors(error);

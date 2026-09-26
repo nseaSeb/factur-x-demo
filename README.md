@@ -18,6 +18,7 @@ Détail : [`docs/demo-walkthrough.md`](docs/demo-walkthrough.md) pour un scénar
 - **API** : NestJS 11, TypeORM + Postgres, Swagger (`/api/docs`)
 - **Front** : React + Vite (`front/`), consomme l'API via son proxy dev, suit les hyperliens renvoyés plutôt que des routes codées en dur
 - **Lib testée** : [`factur-x-ts`](https://www.npmjs.com/package/factur-x-ts) (générateur/parseur Factur-X)
+- **Rendu visuel** : template [Typst](https://typst.app) (`src/facturx/templates/invoice.typ`) compilé en PDF/A-3b via `@myriaddreamin/typst-ts-node-compiler`, passé à `generate()` en `visualPdf` — sans ça, factur-x-ts produit une page A4 blanche qui ne sert que de support au XML
 
 ## Lancer le projet
 
