@@ -5,6 +5,7 @@ import {
   IsIn,
   IsDate,
   IsOptional,
+  Matches,
   IsString,
   ValidateNested,
 } from 'class-validator';
@@ -12,7 +13,12 @@ import { FACTURX_PROFILES } from '../../facturx/facturx-profile';
 import type { FacturXProfile } from '../../facturx/facturx-profile';
 import { AllowanceChargeDto } from './allowance-charge.dto';
 import { BillingPeriodDto } from './billing-period.dto';
-import { CURRENCY_CODES, DOCUMENT_TYPE_CODES } from './codes';
+import {
+  COMMON_CURRENCY_CODES,
+  COMMON_DOCUMENT_TYPE_CODES,
+  CURRENCY_CODE_PATTERN,
+  DOCUMENT_TYPE_CODE_PATTERN,
+} from './codes';
 import { LineItemDto } from './line-item.dto';
 import { MonetaryTotalsDto } from './monetary-totals.dto';
 import { NoteDto } from './note.dto';
@@ -31,16 +37,19 @@ export class CreateInvoiceDto {
   @Type(() => Date)
   issueDate: Date;
 
-  @ApiProperty({ enum: CURRENCY_CODES })
-  @IsIn(CURRENCY_CODES)
-  currency: (typeof CURRENCY_CODES)[number];
+  @ApiProperty({
+    description: 'ISO 4217',
+    examples: [...COMMON_CURRENCY_CODES],
+  })
+  @Matches(CURRENCY_CODE_PATTERN)
+  currency: string;
 
   @ApiProperty({
-    enum: DOCUMENT_TYPE_CODES,
-    description: "'380' = facture commerciale",
+    description: "UNTDID 1001 — '380' = facture commerciale, '381' = avoir",
+    examples: [...COMMON_DOCUMENT_TYPE_CODES],
   })
-  @IsIn(DOCUMENT_TYPE_CODES)
-  typeCode: (typeof DOCUMENT_TYPE_CODES)[number];
+  @Matches(DOCUMENT_TYPE_CODE_PATTERN)
+  typeCode: string;
 
   @ApiPropertyOptional({ enum: FACTURX_PROFILES, default: 'EN 16931' })
   @IsOptional()
@@ -129,6 +138,22 @@ export class CreateInvoiceDto {
   @ValidateNested({ each: true })
   @Type(() => PrecedingInvoiceDto)
   precedingInvoices?: PrecedingInvoiceDto[];
+
+  @ApiPropertyOptional({
+    description:
+      "BT-9 — date d'échéance. BT-9 ou BT-20 est obligatoire dès que le net à payer est positif (BR-CO-25)",
+  })
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  paymentDueDate?: Date;
+
+  @ApiPropertyOptional({
+    description: 'BT-20 — conditions de paiement, ex: « 30 jours fin de mois »',
+  })
+  @IsOptional()
+  @IsString()
+  paymentTerms?: string;
 
   @ApiPropertyOptional({
     description: 'BT-23 — cadre de facturation français, ex: S1, B1',

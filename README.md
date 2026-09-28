@@ -44,7 +44,7 @@ Front sur `http://localhost:5173`, proxy Vite vers l'API — pas de CORS à gér
 ## Hors scope
 
 - Authentification (dépendances passport présentes mais aucun guard branché)
-- Validation XSD/Schematron officielle EN 16931 (la lib ne la fait pas, à faire en aval avant tout envoi réel)
+- Validation XSD/Schematron officielle : `factur-x-ts` la propose depuis la 0.2 (XSD embarqués, Schematron via un serveur Saxon), mais la démo ne l'expose pas encore — seule `validateEn16931()` est branchée
 - Front production-ready (c'est un outil de démo, pas une UI de facturation complète)
 
 ## Tests

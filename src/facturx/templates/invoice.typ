@@ -27,8 +27,11 @@
 
 #let currency-symbol = (EUR: "€", USD: "$", GBP: "£").at(inv.currency, default: inv.currency)
 
+// Amounts arrive as numbers (created invoices) or canonical decimal strings
+// (parsed ones, since factur-x-ts 0.3), so everything goes through float().
 // French money format: 1 234,50 €. Works on cents to avoid float noise.
 #let money(value) = {
+  let value = float(value)
   let cents = calc.round(calc.abs(value) * 100)
   let units = str(int(calc.quo(cents, 100)))
   let rest = int(calc.rem(cents, 100))
@@ -43,10 +46,8 @@
   sign + groups.join("\u{202F}") + "," + decimals + "\u{00A0}" + currency-symbol
 }
 
-#let number(value) = {
-  let s = str(value)
-  s.replace(".", ",")
-}
+// "20.00" and 20 both print as 20.
+#let number(value) = str(float(value)).replace(".", ",")
 
 #let date(iso) = {
   let parts = iso.slice(0, 10).split("-")
@@ -80,6 +81,9 @@
     #text(16pt, weight: "bold", upper(type-label)) \
     #text(fill: muted)[N° ] #strong(inv.number) \
     #text(fill: muted)[Émise le ] #date(inv.issueDate)
+    #if "paymentDueDate" in inv [
+      \ #text(fill: muted)[Échéance ] #strong(date(inv.paymentDueDate))
+    ]
     #if "billingPeriod" in inv [
       \ #text(fill: muted)[Période : ]
       #date(inv.billingPeriod.startDate) – #date(inv.billingPeriod.endDate)
@@ -150,10 +154,10 @@
     stroke: none,
     inset: (x: 4pt, y: 5pt),
     ..total-row("Total HT", inv.totals.taxBasisTotal),
-    ..total-row("TVA", inv.totals.taxTotal),
+    ..total-row("TVA", inv.totals.at("taxTotal", default: 0)),
     table.hline(stroke: 0.8pt + accent),
     ..total-row("Total TTC", inv.totals.grandTotal, bold: true),
-    ..if "prepaid" in inv.totals and inv.totals.prepaid != 0 {
+    ..if float(inv.totals.at("prepaid", default: 0)) != 0 {
       total-row("Déjà réglé", inv.totals.prepaid)
     },
     ..total-row("Net à payer", inv.totals.duePayable, bold: true),
@@ -162,9 +166,15 @@
 
 // --- payment & notes --------------------------------------------------------
 
+#if "paymentTerms" in inv [
+  #v(8mm)
+  #text(8pt, fill: muted, upper("Conditions de paiement")) \
+  #inv.paymentTerms
+]
+
 #let means = inv.at("paymentMeans", default: ()).filter(m => "iban" in m)
 #if means.len() > 0 [
-  #v(8mm)
+  #v(6mm)
   #text(8pt, fill: muted, upper("Règlement par virement")) \
   #for m in means [
     IBAN #m.iban

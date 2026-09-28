@@ -1,31 +1,26 @@
-import type {
-  BillingPeriod,
-  FacturXInvoice,
-  PrecedingInvoice,
-} from 'factur-x-ts';
+import type { FacturXInvoice } from 'factur-x-ts';
 
-type IsoDateString = string;
-
-type BillingPeriodJson = Omit<BillingPeriod, 'startDate' | 'endDate'> & {
-  startDate: IsoDateString;
-  endDate: IsoDateString;
-};
-
-type PrecedingInvoiceJson = Omit<PrecedingInvoice, 'issueDate'> & {
-  issueDate?: IsoDateString;
-};
+/**
+ * `Date` becomes its ISO string, recursively, as `JSON.stringify` does.
+ * Primitives are matched first: the lib's open code lists (`'EUR' | (string
+ * & {})`) would otherwise be taken apart as objects.
+ */
+type Jsonified<T> = T extends string | number | boolean | null | undefined
+  ? T
+  : T extends Date
+    ? string
+    : T extends readonly (infer U)[]
+      ? Jsonified<U>[]
+      : T extends object
+        ? { [K in keyof T]: Jsonified<T[K]> }
+        : T;
 
 /**
  * Shape `FacturXInvoice` takes once round-tripped through Postgres `jsonb`
- * storage: `Date` fields come back as ISO strings, not `Date` instances.
- * Storing/reading via this type (instead of `FacturXInvoice` directly) makes
- * that fact visible at the type level instead of a silent runtime surprise.
+ * storage: every `Date` field comes back as an ISO string, at any depth
+ * (issue date, due date, line delivery dates, billing periods…). Deriving
+ * it recursively means a Date field added by a future factur-x-ts release
+ * shows up here as a string, and `toFacturXInvoice` stops compiling until
+ * it converts it back.
  */
-export type FacturXInvoiceJson = Omit<
-  FacturXInvoice,
-  'issueDate' | 'billingPeriod' | 'precedingInvoices'
-> & {
-  issueDate: IsoDateString;
-  billingPeriod?: BillingPeriodJson;
-  precedingInvoices?: PrecedingInvoiceJson[];
-};
+export type FacturXInvoiceJson = Jsonified<FacturXInvoice>;

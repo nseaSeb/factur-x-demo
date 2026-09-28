@@ -1,3 +1,7 @@
+// Amounts are numbers on the way in; invoices read back from a PDF carry
+// canonical decimal strings ('240.00') since factur-x-ts 0.3.
+export type Decimal = number | string;
+
 export interface Link {
   href: string;
   method?: 'GET' | 'POST' | 'DELETE';
@@ -19,37 +23,38 @@ export interface TradeParty {
   address: PostalAddress;
 }
 
-export type VatCategoryCode = 'S' | 'E' | 'Z' | 'G' | 'O' | 'K' | 'AE';
+export type VatCategoryCode = 'S' | 'E' | 'Z' | 'G' | 'O' | 'K' | 'AE' | 'L' | 'M';
 
 export interface LineItem {
   id: string;
   name: string;
-  quantity: number;
+  quantity: Decimal;
   unit: string;
-  netPrice: number;
-  lineTotal: number;
+  netPrice: Decimal;
+  lineTotal: Decimal;
   vatCategory: VatCategoryCode;
-  vatRate: number;
+  vatRate: Decimal;
 }
 
 export interface TaxBreakdown {
   type: 'VAT';
   category: VatCategoryCode;
-  rate: number;
-  basisAmount: number;
-  calculatedAmount: number;
+  rate: Decimal;
+  basisAmount: Decimal;
+  calculatedAmount: Decimal;
 }
 
 export interface MonetaryTotals {
-  lineTotal: number;
-  taxBasisTotal: number;
-  taxTotal: number;
-  grandTotal: number;
-  duePayable: number;
+  lineTotal: Decimal;
+  taxBasisTotal: Decimal;
+  taxTotal?: Decimal;
+  grandTotal: Decimal;
+  duePayable: Decimal;
 }
 
-export type CurrencyCode = 'EUR' | 'USD' | 'GBP';
-export type DocumentTypeCode = '380' | '381' | '386' | '500';
+// Open lists since factur-x-ts 0.3 (any ISO 4217 / UNTDID 1001 code).
+export type CurrencyCode = 'EUR' | 'USD' | 'GBP' | 'CHF' | (string & {});
+export type DocumentTypeCode = '380' | '381' | '384' | '386' | '500' | (string & {});
 export type FacturXProfile = 'EN 16931' | 'EXTENDED' | 'BASIC' | 'BASIC WL' | 'MINIMUM';
 
 export const FACTURX_PROFILES: FacturXProfile[] = [
@@ -59,7 +64,7 @@ export const FACTURX_PROFILES: FacturXProfile[] = [
   'BASIC WL',
   'MINIMUM',
 ];
-export const VAT_CATEGORY_CODES: VatCategoryCode[] = ['S', 'E', 'Z', 'G', 'O', 'K', 'AE'];
+export const VAT_CATEGORY_CODES: VatCategoryCode[] = ['S', 'E', 'Z', 'G', 'O', 'K', 'AE', 'L', 'M'];
 
 export interface FacturXInvoicePayload {
   number: string;
@@ -71,6 +76,8 @@ export interface FacturXInvoicePayload {
   lines: LineItem[];
   taxBreakdown: TaxBreakdown[];
   totals: MonetaryTotals;
+  paymentDueDate?: string;
+  paymentTerms?: string;
 }
 
 export type CreateInvoiceInput = FacturXInvoicePayload & { profile?: FacturXProfile };

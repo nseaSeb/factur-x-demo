@@ -8,8 +8,11 @@ Scénario complet démontrant les trois capacités de la lib (`generate`, `parse
 ```bash
 curl -s -X POST http://localhost:3200/invoices \
   -H 'Content-Type: application/json' \
-  --data @sample-invoice.json
+  --data @docs/sample-invoice.json
 ```
+
+Le payload doit porter `paymentDueDate` (BT-9) ou `paymentTerms` (BT-20) dès que le net à payer est
+positif (BR-CO-25) — sans l'un des deux, la génération du PDF est refusée à l'étape 2.
 
 Réponse : `Resource<Invoice>` avec `_links.self`, `_links.pdf`, `_links.validation`, `_links.collection`.
 Noter l'`id` retourné.
@@ -62,5 +65,5 @@ DTO (`class-validator`), avant même d'atteindre `validateEn16931`.
 - Frontend React (phase ultérieure).
 - Authentification (`.addBearerAuth()` documenté dans Swagger mais non appliqué — dépendances passport
   déjà présentes, guard à construire plus tard).
-- Validation XSD/Schematron officielle — limitation connue de `factur-x-ts`, à faire en aval avant tout
-  envoi réel à un destinataire.
+- Validation XSD/Schematron officielle — disponible dans `factur-x-ts` depuis la 0.2, pas encore
+  exposée par l'API.

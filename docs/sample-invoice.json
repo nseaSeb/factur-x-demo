@@ -1,0 +1,55 @@
+{
+  "number": "DEMO-2026-002",
+  "issueDate": "2026-09-26",
+  "currency": "EUR",
+  "typeCode": "380",
+  "seller": {
+    "name": "Acme SAS",
+    "vatId": "FR12345678901",
+    "address": {
+      "lineOne": "1 rue de Paris",
+      "postcode": "75001",
+      "city": "Paris",
+      "country": "FR"
+    }
+  },
+  "buyer": {
+    "name": "Client SARL",
+    "address": {
+      "lineOne": "2 avenue de Lyon",
+      "postcode": "69001",
+      "city": "Lyon",
+      "country": "FR"
+    }
+  },
+  "lines": [
+    {
+      "id": "1",
+      "name": "Conseil",
+      "quantity": 2,
+      "unit": "HUR",
+      "netPrice": 100,
+      "lineTotal": 200,
+      "vatCategory": "S",
+      "vatRate": 20
+    }
+  ],
+  "taxBreakdown": [
+    {
+      "type": "VAT",
+      "category": "S",
+      "rate": 20,
+      "basisAmount": 200,
+      "calculatedAmount": 40
+    }
+  ],
+  "totals": {
+    "lineTotal": 200,
+    "taxBasisTotal": 200,
+    "taxTotal": 40,
+    "grandTotal": 240,
+    "duePayable": 240
+  },
+  "paymentDueDate": "2026-10-27",
+  "paymentTerms": "Paiement à 30 jours"
+}

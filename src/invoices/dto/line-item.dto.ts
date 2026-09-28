@@ -1,9 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import type { DecimalInput } from 'factur-x-ts';
+import {
+  DECIMAL_SCHEMA,
+  IsDecimalInput,
+} from '../../common/dto/is-decimal-input.decorator';
 import { Type } from 'class-transformer';
 import {
   IsArray,
   IsIn,
-  IsNumber,
   IsOptional,
   IsString,
   ValidateNested,
@@ -25,39 +29,39 @@ export class LineItemDto {
   @IsString()
   description?: string;
 
-  @ApiProperty()
-  @IsNumber()
-  quantity: number;
+  @ApiProperty(DECIMAL_SCHEMA)
+  @IsDecimalInput()
+  quantity: DecimalInput;
 
   @ApiProperty({ description: 'UN/ECE Rec 20, ex: C62' })
   @IsString()
   unit: string;
 
-  @ApiProperty()
-  @IsNumber()
-  netPrice: number;
+  @ApiProperty(DECIMAL_SCHEMA)
+  @IsDecimalInput()
+  netPrice: DecimalInput;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional(DECIMAL_SCHEMA)
   @IsOptional()
-  @IsNumber()
-  grossPrice?: number;
+  @IsDecimalInput()
+  grossPrice?: DecimalInput;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional(DECIMAL_SCHEMA)
   @IsOptional()
-  @IsNumber()
-  priceDiscount?: number;
+  @IsDecimalInput()
+  priceDiscount?: DecimalInput;
 
-  @ApiProperty()
-  @IsNumber()
-  lineTotal: number;
+  @ApiProperty(DECIMAL_SCHEMA)
+  @IsDecimalInput()
+  lineTotal: DecimalInput;
 
   @ApiProperty({ enum: VAT_CATEGORY_CODES })
   @IsIn(VAT_CATEGORY_CODES)
   vatCategory: (typeof VAT_CATEGORY_CODES)[number];
 
-  @ApiProperty()
-  @IsNumber()
-  vatRate: number;
+  @ApiProperty(DECIMAL_SCHEMA)
+  @IsDecimalInput()
+  vatRate: DecimalInput;
 
   @ApiPropertyOptional({ type: [AllowanceChargeDto] })
   @IsOptional()

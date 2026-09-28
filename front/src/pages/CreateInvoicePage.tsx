@@ -17,6 +17,8 @@ import {
 interface FormState {
   number: string;
   issueDate: string;
+  paymentDueDate: string;
+  paymentTerms: string;
   currency: CurrencyCode;
   typeCode: DocumentTypeCode;
   profile: FacturXProfile;
@@ -42,6 +44,8 @@ interface FormState {
 const initialState: FormState = {
   number: `INV-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 900) + 100)}`,
   issueDate: new Date().toISOString().slice(0, 10),
+  paymentDueDate: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString().slice(0, 10),
+  paymentTerms: 'Paiement à 30 jours, par virement',
   currency: 'EUR',
   typeCode: '380',
   profile: 'EN 16931',
@@ -110,6 +114,8 @@ export default function CreateInvoicePage() {
     const payload: CreateInvoiceInput = {
       number: form.number,
       issueDate: new Date(form.issueDate).toISOString(),
+      paymentDueDate: form.paymentDueDate ? new Date(form.paymentDueDate).toISOString() : undefined,
+      paymentTerms: form.paymentTerms || undefined,
       currency: form.currency,
       typeCode: form.typeCode,
       profile: form.profile,
@@ -195,11 +201,24 @@ export default function CreateInvoicePage() {
             />
           </div>
           <div className="field">
+            <label>Échéance (BT-9)</label>
+            <input
+              type="date"
+              value={form.paymentDueDate}
+              onChange={(e) => set('paymentDueDate', e.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label>Conditions de paiement (BT-20)</label>
+            <input value={form.paymentTerms} onChange={(e) => set('paymentTerms', e.target.value)} />
+          </div>
+          <div className="field">
             <label>Devise</label>
             <select value={form.currency} onChange={(e) => set('currency', e.target.value as CurrencyCode)}>
               <option value="EUR">EUR</option>
               <option value="USD">USD</option>
               <option value="GBP">GBP</option>
+              <option value="CHF">CHF</option>
             </select>
           </div>
           <div className="field">

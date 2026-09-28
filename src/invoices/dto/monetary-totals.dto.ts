@@ -1,39 +1,48 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumber, IsOptional } from 'class-validator';
+import type { DecimalInput } from 'factur-x-ts';
+import {
+  DECIMAL_SCHEMA,
+  IsDecimalInput,
+} from '../../common/dto/is-decimal-input.decorator';
+import { IsOptional } from 'class-validator';
 
 export class MonetaryTotalsDto {
-  @ApiProperty()
-  @IsNumber()
-  lineTotal: number;
+  @ApiProperty(DECIMAL_SCHEMA)
+  @IsDecimalInput()
+  lineTotal: DecimalInput;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional(DECIMAL_SCHEMA)
   @IsOptional()
-  @IsNumber()
-  allowanceTotal?: number;
+  @IsDecimalInput()
+  allowanceTotal?: DecimalInput;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional(DECIMAL_SCHEMA)
   @IsOptional()
-  @IsNumber()
-  chargeTotal?: number;
+  @IsDecimalInput()
+  chargeTotal?: DecimalInput;
 
-  @ApiProperty()
-  @IsNumber()
-  taxBasisTotal: number;
+  @ApiProperty(DECIMAL_SCHEMA)
+  @IsDecimalInput()
+  taxBasisTotal: DecimalInput;
 
-  @ApiProperty()
-  @IsNumber()
-  taxTotal: number;
-
-  @ApiProperty()
-  @IsNumber()
-  grandTotal: number;
-
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({
+    ...DECIMAL_SCHEMA,
+    description: 'BT-110, optionnel dans tous les schémas',
+  })
   @IsOptional()
-  @IsNumber()
-  prepaid?: number;
+  @IsDecimalInput()
+  taxTotal?: DecimalInput;
 
-  @ApiProperty()
-  @IsNumber()
-  duePayable: number;
+  @ApiProperty(DECIMAL_SCHEMA)
+  @IsDecimalInput()
+  grandTotal: DecimalInput;
+
+  @ApiPropertyOptional(DECIMAL_SCHEMA)
+  @IsOptional()
+  @IsDecimalInput()
+  prepaid?: DecimalInput;
+
+  @ApiProperty(DECIMAL_SCHEMA)
+  @IsDecimalInput()
+  duePayable: DecimalInput;
 }

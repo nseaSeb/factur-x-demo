@@ -65,6 +65,39 @@ describe('InvoiceRendererService', () => {
     expect(pdf.toString('latin1')).toContain('<pdfaid:part>3</pdfaid:part>');
   });
 
+  it('renders the canonical decimal strings a parsed invoice carries', () => {
+    const parsed: FacturXInvoiceJson = {
+      ...invoice,
+      lines: [
+        {
+          ...invoice.lines[0],
+          quantity: '2.0000',
+          netPrice: '1234.50',
+          lineTotal: '2469.00',
+          vatRate: '20.00',
+        },
+      ],
+      taxBreakdown: [
+        {
+          ...invoice.taxBreakdown[0],
+          rate: '20.00',
+          basisAmount: '2469.00',
+          calculatedAmount: '493.80',
+        },
+      ],
+      totals: {
+        lineTotal: '2469.00',
+        taxBasisTotal: '2469.00',
+        taxTotal: '493.80',
+        grandTotal: '2962.80',
+        prepaid: '0.00',
+        duePayable: '2962.80',
+      },
+    };
+
+    expect(renderer.render(parsed, 'EN 16931').length).toBeGreaterThan(1000);
+  });
+
   it('renders optional blocks without failing', () => {
     const pdf = renderer.render(
       {
@@ -74,6 +107,8 @@ describe('InvoiceRendererService', () => {
           endDate: '2026-09-30T00:00:00.000Z',
         },
         paymentMeans: [{ typeCode: '58', iban: 'FR7630006000011234567890189' }],
+        paymentDueDate: '2026-10-26T00:00:00.000Z',
+        paymentTerms: 'Paiement à 30 jours',
         notes: [{ content: 'Pénalités de retard : 3 fois le taux légal.' }],
         lines: [{ ...invoice.lines[0], description: 'Audit technique' }],
       },

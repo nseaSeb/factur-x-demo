@@ -1,5 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsNumber, IsOptional, IsString } from 'class-validator';
+import type { DecimalInput } from 'factur-x-ts';
+import {
+  DECIMAL_SCHEMA,
+  IsDecimalInput,
+} from '../../common/dto/is-decimal-input.decorator';
+import { IsIn, IsOptional, IsString } from 'class-validator';
 import { VAT_CATEGORY_CODES } from './codes';
 
 export class TaxBreakdownDto {
@@ -11,17 +16,17 @@ export class TaxBreakdownDto {
   @IsIn(VAT_CATEGORY_CODES)
   category: (typeof VAT_CATEGORY_CODES)[number];
 
-  @ApiProperty()
-  @IsNumber()
-  rate: number;
+  @ApiProperty(DECIMAL_SCHEMA)
+  @IsDecimalInput()
+  rate: DecimalInput;
 
-  @ApiProperty()
-  @IsNumber()
-  basisAmount: number;
+  @ApiProperty(DECIMAL_SCHEMA)
+  @IsDecimalInput()
+  basisAmount: DecimalInput;
 
-  @ApiProperty()
-  @IsNumber()
-  calculatedAmount: number;
+  @ApiProperty(DECIMAL_SCHEMA)
+  @IsDecimalInput()
+  calculatedAmount: DecimalInput;
 
   @ApiPropertyOptional()
   @IsOptional()
