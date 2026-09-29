@@ -122,6 +122,7 @@ th {
 }
 
 .actions {
+  align-items: center;
   display: flex;
   gap: 10px;
   margin: 16px 0;
@@ -265,4 +266,19 @@ pre {
 
 code {
   font-size: 12px;
+}
+
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.lines-table select {
+  margin-top: 4px;
+  width: 100%;
+  font-size: 12px;
+}
+
+.stale {
+  opacity: 0.6;
 }

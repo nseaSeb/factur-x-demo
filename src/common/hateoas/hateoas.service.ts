@@ -6,6 +6,7 @@ interface InvoiceLinks {
   self: Link;
   pdf: Link;
   validation: Link;
+  conformance: Link;
   collection: Link;
 }
 
@@ -42,6 +43,10 @@ export class HateoasService {
       self: { href: `${this.baseUrl}/invoices/${id}`, method: 'GET' },
       pdf: { href: `${this.baseUrl}/invoices/${id}/pdf`, method: 'GET' },
       validation: { href: `${this.baseUrl}/invoices/validate`, method: 'POST' },
+      conformance: {
+        href: `${this.baseUrl}/invoices/${id}/conformance`,
+        method: 'GET',
+      },
       collection: { href: `${this.baseUrl}/invoices`, method: 'GET' },
     };
   }

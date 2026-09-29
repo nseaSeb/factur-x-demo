@@ -98,6 +98,7 @@ export interface InvoiceResource {
     self: Link;
     pdf: Link;
     validation: Link;
+    conformance: Link;
     collection: Link;
   };
 }
@@ -164,4 +165,36 @@ export interface ProductCollectionResource {
     next?: Link;
     prev?: Link;
   };
+}
+
+export interface TotalsError {
+  code: string;
+  field: string;
+  message: string;
+  given?: string;
+  computed?: string;
+}
+
+// computeTotals: the completed invoice (decimal strings) or every problem.
+export type TotalsResult =
+  | { ok: true; invoice: FacturXInvoicePayload }
+  | { ok: false; errors: TotalsError[] };
+
+export interface XsdError {
+  message: string;
+  line?: number;
+}
+
+export interface SchematronViolation {
+  message?: string;
+  location?: string;
+  test?: string;
+}
+
+export interface ConformanceResult {
+  profile: FacturXProfile;
+  xsd: { valid: boolean; errors: XsdError[] };
+  schematron:
+    | { status: 'checked'; valid: boolean; errors: SchematronViolation[]; warnings: SchematronViolation[] }
+    | { status: 'skipped' | 'unavailable'; reason: string };
 }

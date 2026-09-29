@@ -1,12 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import type {
+  DraftInvoice,
   FacturXInvoice,
   GenerateOptions,
   ParseResult,
+  SchematronValidationOptions,
+  SchematronValidationResult,
+  TotalsResult,
   ValidationError,
   ValidationOptions,
   ValidationResult,
+  XsdValidationResult,
 } from 'factur-x-ts';
+import type { FacturXProfile } from './facturx-profile';
 
 type FacturXModule = typeof import('factur-x-ts');
 
@@ -46,6 +52,45 @@ export class FacturxService {
   ): Promise<ValidationResult> {
     const mod = await this.loadModule();
     return mod.validateEn16931(invoice, options);
+  }
+
+  async computeTotals(draft: DraftInvoice): Promise<TotalsResult> {
+    const mod = await this.loadModule();
+    return mod.computeTotals(draft);
+  }
+
+  async serialize(
+    invoice: FacturXInvoice,
+    profile: FacturXProfile,
+  ): Promise<string> {
+    const mod = await this.loadModule();
+    return mod.serialize(invoice, profile);
+  }
+
+  async validateXsd(
+    xml: string,
+    profile: FacturXProfile,
+  ): Promise<XsdValidationResult> {
+    const mod = await this.loadModule();
+    return mod.validateXsd(xml, { profile });
+  }
+
+  async validateSchematron(
+    xml: string,
+    options: SchematronValidationOptions,
+  ): Promise<SchematronValidationResult> {
+    const mod = await this.loadModule();
+    return mod.validateSchematron(xml, options);
+  }
+
+  async isSerializeError(error: unknown): Promise<boolean> {
+    const mod = await this.loadModule();
+    return error instanceof mod.FacturXSerializeError;
+  }
+
+  async isSaxonError(error: unknown): Promise<boolean> {
+    const mod = await this.loadModule();
+    return error instanceof mod.FacturXSaxonError;
   }
 
   /** Returns the structured validation errors if `error` is a FacturXGenerateError, otherwise null. */

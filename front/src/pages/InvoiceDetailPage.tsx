@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { api, ApiError } from '../api/client';
-import type { InvoiceResource, ValidationResult } from '../api/types';
+import { api, ApiError, withProfile } from '../api/client';
+import {
+  FACTURX_PROFILES,
+  type FacturXProfile,
+  type InvoiceResource,
+  type ValidationResult,
+} from '../api/types';
+import ConformancePanel from '../components/ConformancePanel';
 import PdfPreview from '../components/PdfPreview';
 import ValidationReport from '../components/ValidationReport';
 
@@ -11,6 +17,7 @@ export default function InvoiceDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [validation, setValidation] = useState<ValidationResult | null>(null);
   const [validating, setValidating] = useState(false);
+  const [profile, setProfile] = useState<FacturXProfile | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -27,6 +34,9 @@ export default function InvoiceDetailPage() {
 
   const { data, _links } = resource;
   const { payload } = data;
+  // Same invoice, any of the five profiles: the PDF and the conformance
+  // check follow this selector, defaulting to the stored profile.
+  const activeProfile = profile ?? data.profile;
 
   async function runValidation() {
     setValidating(true);
@@ -60,6 +70,21 @@ export default function InvoiceDetailPage() {
       </p>
 
       <div className="actions">
+        <label className="hint" htmlFor="profile">
+          Profil
+        </label>
+        <select
+          id="profile"
+          value={activeProfile}
+          onChange={(e) => setProfile(e.target.value as FacturXProfile)}
+        >
+          {FACTURX_PROFILES.map((p) => (
+            <option key={p} value={p}>
+              {p}
+              {p === data.profile ? ' (enregistré)' : ''}
+            </option>
+          ))}
+        </select>
         <button className="btn primary" onClick={runValidation} disabled={validating}>
           {validating ? 'Validation…' : 'Valider (EN 16931)'}
         </button>
@@ -129,7 +154,12 @@ export default function InvoiceDetailPage() {
         <p>À payer : {payload.totals.duePayable} €</p>
       </div>
 
-      <PdfPreview href={_links.pdf.href} fileName={`${data.number}.pdf`} />
+      <ConformancePanel href={_links.conformance.href} profile={activeProfile} />
+
+      <PdfPreview
+        href={withProfile(_links.pdf.href, activeProfile)}
+        fileName={`${data.number}-${activeProfile.replace(' ', '-')}.pdf`}
+      />
     </section>
   );
 }

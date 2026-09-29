@@ -8,6 +8,11 @@ export function toPath(hrefOrPath: string): string {
   return hrefOrPath.startsWith(API_ORIGIN) ? hrefOrPath.slice(API_ORIGIN.length) : hrefOrPath;
 }
 
+// The PDF and conformance links take an optional profile override.
+export function withProfile(href: string, profile: string): string {
+  return `${href}?profile=${encodeURIComponent(profile)}`;
+}
+
 export class ApiError extends Error {
   status: number;
   body: unknown;

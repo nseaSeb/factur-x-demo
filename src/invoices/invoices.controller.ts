@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
   Param,
   Post,
   Query,
@@ -19,6 +20,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { HateoasService } from '../common/hateoas/hateoas.service';
+import { ComputeTotalsDto } from './dto/compute-totals.dto';
+import { ConformanceResultDto } from './dto/conformance-result.dto';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { GeneratePdfQueryDto } from './dto/generate-pdf-query.dto';
 import {
@@ -28,6 +31,7 @@ import {
 } from './dto/invoice-resource.dto';
 import { ListInvoicesQueryDto } from './dto/list-invoices-query.dto';
 import { ParseInvoiceResponseDto } from './dto/parse-invoice-response.dto';
+import { TotalsResultDto } from './dto/totals-result.dto';
 import { ValidationResultDto } from './dto/validation-result.dto';
 import { Invoice } from './entities/invoice.entity';
 import { InvoicesService } from './invoices.service';
@@ -90,6 +94,30 @@ export class InvoicesController {
       type: 'application/pdf',
       disposition: 'attachment; filename="factur-x.pdf"',
     });
+  }
+
+  @Get(':id/conformance')
+  @ApiOperation({
+    summary:
+      'Check the invoice XML against the official XSD and Schematron of a profile',
+  })
+  @ApiResponse({ status: 200, type: ConformanceResultDto })
+  async conformance(
+    @Param('id') id: string,
+    @Query() query: GeneratePdfQueryDto,
+  ): Promise<ConformanceResultDto> {
+    return this.invoicesService.checkConformance(id, query.profile);
+  }
+
+  @Post('totals')
+  @HttpCode(200)
+  @ApiOperation({
+    summary:
+      'Derive line amounts, VAT breakdown and document totals (computeTotals)',
+  })
+  @ApiResponse({ status: 200, type: TotalsResultDto })
+  async computeTotals(@Body() dto: ComputeTotalsDto): Promise<TotalsResultDto> {
+    return this.invoicesService.computeTotals(dto);
   }
 
   @Post('parse')

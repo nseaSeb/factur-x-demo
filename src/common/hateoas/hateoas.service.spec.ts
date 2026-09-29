@@ -49,4 +49,11 @@ describe('HateoasService', () => {
       expect(links.next).toBeUndefined();
     });
   });
+
+  it('links an invoice to its conformance check', () => {
+    expect(hateoas.invoiceLinks('abc').conformance).toEqual({
+      href: 'http://api.test/invoices/abc/conformance',
+      method: 'GET',
+    });
+  });
 });

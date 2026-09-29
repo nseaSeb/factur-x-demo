@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import TotalsPanel from '../components/TotalsPanel';
 import { useNavigate } from 'react-router-dom';
 import { api, ApiError, toPath } from '../api/client';
 import {
@@ -11,6 +12,7 @@ import {
   type InvoiceResource,
   type Product,
   type ProductCollectionResource,
+  type TotalsResult,
   type VatCategoryCode,
 } from '../api/types';
 
@@ -33,13 +35,33 @@ interface FormState {
   buyerPostcode: string;
   buyerCity: string;
   buyerCountry: string;
-  lineName: string;
+}
+
+interface LineDraft {
+  name: string;
   quantity: string;
   unit: string;
   netPrice: string;
   vatCategory: VatCategoryCode;
   vatRate: string;
 }
+
+const emptyLine: LineDraft = {
+  name: '',
+  quantity: '1',
+  unit: 'C62',
+  netPrice: '',
+  vatCategory: 'S',
+  vatRate: '20',
+};
+
+const initialLines: LineDraft[] = [
+  { name: 'Prestation de conseil', quantity: '2', unit: 'HUR', netPrice: '100', vatCategory: 'S', vatRate: '20' },
+  { name: 'Ouvrage technique', quantity: '3', unit: 'C62', netPrice: '12.35', vatCategory: 'S', vatRate: '5.5' },
+];
+
+// French keyboards type "12,5"; the API wants a decimal string.
+const decimal = (value: string) => value.trim().replace(',', '.');
 
 const initialState: FormState = {
   number: `INV-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 900) + 100)}`,
@@ -60,16 +82,13 @@ const initialState: FormState = {
   buyerPostcode: '69000',
   buyerCity: 'Lyon',
   buyerCountry: 'FR',
-  lineName: 'Prestation de conseil',
-  quantity: '2',
-  unit: 'C62',
-  netPrice: '100',
-  vatCategory: 'S',
-  vatRate: '20',
 };
 
 export default function CreateInvoicePage() {
   const [form, setForm] = useState<FormState>(initialState);
+  const [lines, setLines] = useState<LineDraft[]>(initialLines);
+  const [totals, setTotals] = useState<TotalsResult | null>(null);
+  const [totalsPending, setTotalsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
@@ -86,39 +105,39 @@ export default function CreateInvoicePage() {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
-  function applyProduct(productId: string) {
-    const product = products.find((p) => p.id === productId);
-    if (!product) return;
-    setForm((f) => ({
-      ...f,
-      lineName: product.name,
-      unit: product.unit,
-      netPrice: String(product.netPrice),
-      vatCategory: product.vatCategory,
-      vatRate: String(product.vatRate),
-    }));
+  function setLine<K extends keyof LineDraft>(index: number, key: K, value: LineDraft[K]) {
+    setLines((ls) => ls.map((l, i) => (i === index ? { ...l, [key]: value } : l)));
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setSubmitting(true);
-    setError(null);
+  function applyProduct(index: number, productId: string) {
+    const product = products.find((p) => p.id === productId);
+    if (!product) return;
+    setLines((ls) =>
+      ls.map((l, i) =>
+        i === index
+          ? {
+              ...l,
+              name: product.name,
+              unit: product.unit,
+              netPrice: String(product.netPrice),
+              vatCategory: product.vatCategory,
+              vatRate: String(product.vatRate),
+            }
+          : l,
+      ),
+    );
+  }
 
-    const quantity = Number(form.quantity);
-    const netPrice = Number(form.netPrice);
-    const vatRate = Number(form.vatRate);
-    const lineTotal = Math.round(quantity * netPrice * 100) / 100;
-    const calculatedAmount = Math.round(((lineTotal * vatRate) / 100) * 100) / 100;
-    const grandTotal = Math.round((lineTotal + calculatedAmount) * 100) / 100;
-
-    const payload: CreateInvoiceInput = {
+  // The invoice minus its arithmetic: no line totals, no VAT breakdown, no
+  // document totals. factur-x-ts's computeTotals derives all of them.
+  function buildDraft() {
+    return {
       number: form.number,
       issueDate: new Date(form.issueDate).toISOString(),
       paymentDueDate: form.paymentDueDate ? new Date(form.paymentDueDate).toISOString() : undefined,
       paymentTerms: form.paymentTerms || undefined,
       currency: form.currency,
       typeCode: form.typeCode,
-      profile: form.profile,
       seller: {
         name: form.sellerName,
         vatId: form.sellerVatId || undefined,
@@ -138,35 +157,51 @@ export default function CreateInvoicePage() {
           country: form.buyerCountry,
         },
       },
-      lines: [
-        {
-          id: '1',
-          name: form.lineName,
-          quantity,
-          unit: form.unit,
-          netPrice,
-          lineTotal,
-          vatCategory: form.vatCategory,
-          vatRate,
-        },
-      ],
-      taxBreakdown: [
-        {
-          type: 'VAT',
-          category: form.vatCategory,
-          rate: vatRate,
-          basisAmount: lineTotal,
-          calculatedAmount,
-        },
-      ],
-      totals: {
-        lineTotal,
-        taxBasisTotal: lineTotal,
-        taxTotal: calculatedAmount,
-        grandTotal,
-        duePayable: grandTotal,
-      },
+      lines: lines.map((l, i) => ({
+        id: String(i + 1),
+        name: l.name,
+        quantity: decimal(l.quantity),
+        unit: l.unit,
+        netPrice: decimal(l.netPrice),
+        vatCategory: l.vatCategory,
+        vatRate: decimal(l.vatRate),
+      })),
     };
+  }
+
+  // Recompute on every edit, debounced so typing doesn't flood the API.
+  useEffect(() => {
+    setTotalsPending(true);
+    const timer = setTimeout(() => {
+      api
+        .post<TotalsResult>('/invoices/totals', buildDraft())
+        .then(setTotals)
+        .catch((err: unknown) =>
+          setTotals({
+            ok: false,
+            errors: [
+              {
+                code: err instanceof ApiError ? `HTTP ${err.status}` : 'NETWORK',
+                field: '',
+                message: 'Saisie incomplète ou invalide',
+              },
+            ],
+          }),
+        )
+        .finally(() => setTotalsPending(false));
+    }, 300);
+    return () => clearTimeout(timer);
+    // buildDraft reads form and lines, which are the real dependencies.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form, lines]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!totals?.ok) return;
+    setSubmitting(true);
+    setError(null);
+
+    const payload: CreateInvoiceInput = { ...totals.invoice, profile: form.profile };
 
     try {
       const resource = await api.post<InvoiceResource>('/invoices', payload);
@@ -300,79 +335,103 @@ export default function CreateInvoicePage() {
         </div>
 
         <div className="card">
-          <h3>Ligne (facture à une ligne pour cette démo)</h3>
-          {products.length > 0 && (
-            <div className="field">
-              <label>Depuis le catalogue (facultatif)</label>
-              <select defaultValue="" onChange={(e) => applyProduct(e.target.value)}>
-                <option value="" disabled>
-                  Choisir un produit…
-                </option>
-                {products.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.sku} — {p.name} ({p.netPrice} €)
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-          <div className="field">
-            <label>Désignation</label>
-            <input value={form.lineName} onChange={(e) => set('lineName', e.target.value)} required />
+          <div className="card-header">
+            <h3>Lignes</h3>
+            <button type="button" className="btn" onClick={() => setLines((ls) => [...ls, emptyLine])}>
+              + Ajouter une ligne
+            </button>
           </div>
-          <div className="grid">
-            <div className="field">
-              <label>Quantité</label>
-              <input
-                type="number"
-                step="any"
-                value={form.quantity}
-                onChange={(e) => set('quantity', e.target.value)}
-                required
-              />
-            </div>
-            <div className="field">
-              <label>Unité (UN/ECE Rec 20)</label>
-              <input value={form.unit} onChange={(e) => set('unit', e.target.value)} required />
-            </div>
-            <div className="field">
-              <label>Prix unitaire HT</label>
-              <input
-                type="number"
-                step="any"
-                value={form.netPrice}
-                onChange={(e) => set('netPrice', e.target.value)}
-                required
-              />
-            </div>
-            <div className="field">
-              <label>Catégorie TVA</label>
-              <select
-                value={form.vatCategory}
-                onChange={(e) => set('vatCategory', e.target.value as VatCategoryCode)}
-              >
-                {VAT_CATEGORY_CODES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="field">
-              <label>Taux TVA (%)</label>
-              <input
-                type="number"
-                step="any"
-                value={form.vatRate}
-                onChange={(e) => set('vatRate', e.target.value)}
-                required
-              />
-            </div>
-          </div>
-          <p className="hint">Total HT, TVA et total TTC sont calculés automatiquement à l'envoi.</p>
+          <table className="lines-table">
+            <thead>
+              <tr>
+                <th>Désignation</th>
+                <th>Qté</th>
+                <th>Unité</th>
+                <th>PU HT</th>
+                <th>Cat.</th>
+                <th>TVA %</th>
+                <th>Total HT</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {lines.map((line, i) => (
+                <tr key={i}>
+                  <td>
+                    <input value={line.name} onChange={(e) => setLine(i, 'name', e.target.value)} required />
+                    {products.length > 0 && (
+                      <select value="" onChange={(e) => applyProduct(i, e.target.value)}>
+                        <option value="" disabled>
+                          Depuis le catalogue…
+                        </option>
+                        {products.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.sku} — {p.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </td>
+                  <td>
+                    <input
+                      inputMode="decimal"
+                      value={line.quantity}
+                      onChange={(e) => setLine(i, 'quantity', e.target.value)}
+                      required
+                    />
+                  </td>
+                  <td>
+                    <input value={line.unit} onChange={(e) => setLine(i, 'unit', e.target.value)} required />
+                  </td>
+                  <td>
+                    <input
+                      inputMode="decimal"
+                      value={line.netPrice}
+                      onChange={(e) => setLine(i, 'netPrice', e.target.value)}
+                      required
+                    />
+                  </td>
+                  <td>
+                    <select
+                      value={line.vatCategory}
+                      onChange={(e) => setLine(i, 'vatCategory', e.target.value as VatCategoryCode)}
+                    >
+                      {VAT_CATEGORY_CODES.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td>
+                    <input
+                      inputMode="decimal"
+                      value={line.vatRate}
+                      onChange={(e) => setLine(i, 'vatRate', e.target.value)}
+                      required
+                    />
+                  </td>
+                  <td className="num">{totals?.ok ? totals.invoice.lines[i]?.lineTotal : '—'}</td>
+                  <td>
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => setLines((ls) => ls.filter((_, j) => j !== i))}
+                      disabled={lines.length === 1}
+                      aria-label="Supprimer la ligne"
+                    >
+                      ×
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
-        <button className="btn primary" type="submit" disabled={submitting}>
+        <TotalsPanel result={totals} pending={totalsPending} currency={form.currency} />
+
+        <button className="btn primary" type="submit" disabled={submitting || !totals?.ok || totalsPending}>
           {submitting ? 'Création…' : 'Créer la facture'}
         </button>
       </form>
